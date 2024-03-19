@@ -117,10 +117,10 @@ Physics.prototype.tick = function (dt) {
 }
 
 
-function getFluidDrag(b, dt, airDrag, axisFluidDrag) {
+function applyFluidDrag(b, airDrag, axisFluidDrag) {
     airDrag = axisFluidDrag
     airDrag *= 1 - (1 - b.ratioInFluid) ** 2   
-    return Math.max(1 - airDrag * dt / b.mass, 0)
+    return airDrag
 }
 
 
@@ -184,9 +184,12 @@ function iterateBody(self, b, dt, noGravity) {
     var vertDrag = airDrag
 
     if (b.inFluid) {
-        horizDrag = getFluidDrag(b, dt, horizDrag, b.fluidDragHoriz >= 0 ? b.fluidDragHoriz : fluidDrag )
-        vertDrag = getFluidDrag(b, dt, vertDrag, b.fluidDragVert >= 0 ? b.fluidDragVert : fluidDrag )
+        horizDrag = applyFluidDrag(b, horizDrag, b.fluidDragHoriz >= 0 ? b.fluidDragHoriz : fluidDrag )
+        vertDrag = applyFluidDrag(b, vertDrag, b.fluidDragVert >= 0 ? b.fluidDragVert : fluidDrag )
     }
+    
+    horizDrag = Math.max(1 - horizDrag * dt / b.mass, 0)
+    vertDrag = Math.max(1 - vertDrag * dt / b.mass, 0)
 
     vec3.set(temp, horizDrag, vertDrag, horizDrag)
     vec3.multiply(b.velocity, b.velocity, temp)
