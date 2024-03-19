@@ -117,11 +117,17 @@ Physics.prototype.tick = function (dt) {
 }
 
 
+function applyFluidDrag(b, airDrag, axisFluidDrag) {
+    airDrag = axisFluidDrag
+    airDrag *= 1 - (1 - b.ratioInFluid) ** 2   
+    return airDrag
+}
+
 
 /*
  *    PER-BODY MAIN PHYSICS ROUTINE
 */
-
+var temp = vec3.create([0, 0, 0])
 function iterateBody(self, b, dt, noGravity) {
     vec3.copy(oldResting, b.resting)
     if (self.isBodyInsideUnloadedBlock) {
@@ -171,14 +177,23 @@ function iterateBody(self, b, dt, noGravity) {
 
     // linear air or fluid friction - effectively v *= drag
     // body settings override global settings
-    var drag = (b.airDrag >= 0) ? b.airDrag : self.airDrag
-    if (b.inFluid) {
-        drag = (b.fluidDrag >= 0) ? b.fluidDrag : self.fluidDrag
-        drag *= 1 - (1 - b.ratioInFluid) ** 2
-    }
-    var mult = Math.max(1 - drag * dt / b.mass, 0)
-    vec3.scale(b.velocity, b.velocity, mult)
 
+    var fluidDrag = (b.fluidDrag >= 0) ? b.fluidDrag : self.fluidDrag
+    var airDrag =  (b.airDrag >= 0) ? b.airDrag : self.airDrag
+    var horizDrag = airDrag
+    var vertDrag = airDrag
+
+    if (b.inFluid) {
+        horizDrag = applyFluidDrag(b, horizDrag, b.fluidDragHoriz >= 0 ? b.fluidDragHoriz : fluidDrag )
+        vertDrag = applyFluidDrag(b, vertDrag, b.fluidDragVert >= 0 ? b.fluidDragVert : fluidDrag )
+    }
+    
+    horizDrag = Math.max(1 - horizDrag * dt / b.mass, 0)
+    vertDrag = Math.max(1 - vertDrag * dt / b.mass, 0)
+
+    vec3.set(temp, horizDrag, vertDrag, horizDrag)
+    vec3.multiply(b.velocity, b.velocity, temp)
+    
     // x1-x0 = v1*dt
     vec3.scale(dx, b.velocity, dt)
 
