@@ -415,7 +415,8 @@ function tryAutoStepping(self, b, oldBox, dx) {
     })
 
     var y = oldBox.base[1]
-    var ydist = Math.floor(y + 1.001) - y
+    var yoffset = b.inFluid ? 2.001 : 1.001
+    var ydist = Math.floor(y + yoffset) - y
     vec3.set(upvec, 0, ydist, 0)
     var collided = false
     // sweep up, bailing on any obstruction
